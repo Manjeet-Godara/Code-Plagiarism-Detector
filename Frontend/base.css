@@ -1,0 +1,23 @@
+#input{
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+}
+#codeInput{
+    border:2px solid green
+}
+#codeForm{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+#Roll{
+    margin-top: 5px;
+    border:2px solid red
+}
+#language{
+    margin-top: 5px;
+    border:2px solid red
+}

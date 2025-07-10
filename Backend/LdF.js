@@ -20,6 +20,7 @@ function LDF(word1,word2){
     }
     const a1= dp[m][n];
     similarity= (1 - a1 / Math.max(m, n)) * 100;
+    similarity = Math.round(similarity * 10) / 10;
     return similarity
 };
 module.exports=LDF

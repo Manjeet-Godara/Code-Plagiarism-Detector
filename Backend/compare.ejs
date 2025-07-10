@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="base.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Codes</title>
+</head>
+<body>
+    <div id="header">
+        Here are both the codes you wanted to compare
+    </div>
+    <div id="compare-container">
+        <div class="code-block">
+            <h2>Code 1 (Roll No: <%= roll1 %>)</h2>
+            <textarea readonly class="big-textarea"><%= code1 %></textarea>
+        </div>
+        <div class="code-block">
+            <h2>Code 2 (Roll No: <%= roll2 %>)</h2>
+            <textarea readonly class="big-textarea"><%= code2 %></textarea>
+        </div>
+    </div>
+    <div id="similarity-result">
+        <h3 id="result1"><%= similarity %>% similar</h3>
+    </div>
+</body>
+</html>

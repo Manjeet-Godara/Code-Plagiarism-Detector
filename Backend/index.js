@@ -3,16 +3,21 @@ const express=require('express');
 const cors=require('cors');
 const app=express();
 app.use(cors());
-const User=require('./model1');
+
+const User=require('./Models/User.js');
+const Professor=require('./Models/professor.js');
+const Space=require('./Models/Space.js');
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 const LDF = require('./LdF.js');
 app.use(express.static(path.join(__dirname, '../Frontend')));
+
 //post request to save code
 
 app.post('/', async (req, res) => {
     try {
-        const { code, roll, language } = req.body;
+        const { code, roll, language } = req.body; 
         //console.log(code, roll, language);
         if (!code || !roll || !language) {
             return res.status(400).json({ error: 'All fields are required' });
@@ -45,7 +50,7 @@ app.post('/', async (req, res) => {
                 }
             }
         }
-        // After finding max_similarity
+        
         await User.findByIdAndUpdate(a._id, {
             similarity: max_similarity.similarity,
             similarity_with: max_similarity.similarity_with,
@@ -80,20 +85,20 @@ app.set("views", path.resolve("./"));
 
 //get request to see the flagged users
 
-app.get('/admin', async (req, res) => {
-    try {
-        const users = await User.find({ flagged: true });
-        if (users.length === 0) {
-            return res.status(200).json({ message: 'No flagged users' });
-        }
-        res.status(200).render("admin",{
-            users:users
-        });
-    } catch (error) {
-        console.error('Error fetching flagged users:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+// app.get('/admin', async (req, res) => {
+//     try {
+//         const users = await User.find({ flagged: true });
+//         if (users.length === 0) {
+//             return res.status(200).json({ message: 'No flagged users' });
+//         }
+//         res.status(200).render("admin",{
+//             users:users
+//         });
+//     } catch (error) {
+//         console.error('Error fetching flagged users:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
 
 // get request to compare two codes side by side
 app.get('/compare/:id1/:id2', async (req, res) => {
@@ -108,29 +113,72 @@ app.get('/compare/:id1/:id2', async (req, res) => {
             res.status(200).render("compare", {
                 code1: user1.code,
                 code2: user2.code,
-                similarity: LDF(user1.code, user2.code),
+                similarity: user1.similarity,
         })}}catch (error) {res.status(500).json({ error: 'Internal server error' });}})
 
-app.get('/compare', async (req, res) => {
-    try {
-        const { roll1, roll2 } = req.query;
-        const user1 = await User.findOne({ user: roll1 });
-        const user2 = await User.findOne({ user: roll2 });
-        if (!user1 || !user2) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.status(200).render("compare", {
-            code1: user1.code,
-            code2: user2.code,
-            roll1:user1.user,
-            roll2:user2.user,
-            similarity: LDF(user1.code, user2.code),
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+// app.get('/compare', async (req, res) => {
+//     try {
+//         const { roll1, roll2 } = req.query;
+//         const user1 = await User.findOne({ user: roll1 });
+//         const user2 = await User.findOne({ user: roll2 });
+//         if (!user1 || !user2) {
+//             return res.status(404).json({ error: 'User not found' });
+//         }
+//         res.status(200).render("compare", {
+//             code1: user1.code,
+//             code2: user2.code,
+//             roll1:user1.user,
+//             roll2:user2.user,
+//             similarity: user1.similarity,
+//         });
+//     } catch (error) {
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
+
+// Code for professor registration
+
+const { setToken, verifyToken } = require('./auth.js');
+
+function authenticateProfessor(req, res, next) {
+    const id=req.cookies?.uid 
+    if (!id) {
+        return res.redirect('/professor/login');
     }
-});
+    const user = verifyToken(id);
+    if (!user) {
+        return res.redirect('/professor/login');
+    }
+    next();
+}
+app.use('/professor', authenticateProfessor);
 
+app.get('/professor', (req, res) => {
+    const id = req.cookies?.uid;
+    const prof= verifyToken(id);
+    res.status(200).render("professor", {
+        name: prof.name,
+        email: prof.email,
+        password: prof.password
+    });});
 
+app.post('/professor/login', (req, res) => {
+    console.log("Received request to create professor");          //don't render a page here, just set the cookie and return a response and then use that data in the frontend
+    const {name,email, password} = req.body;                      // or just send a success message and redirect to a new page and do whatever you want in the frontend
+    Professor.create({name, email, password})
+    .then(professor => {
+        res.cookie('uid', setToken(professor), { httpOnly: true });
+        res.status(200).render("professor", {
+            name: professor.name,
+            email: professor.email,
+            password: professor.password
+        });
+    })
+    .catch(error => {
+        console.error("Error creating professor:", error);
+        res.status(500).send("Internal Server Error");
+    }
+    );
+     }); 
 
 app.listen(8000, () =>console.log("Server is running on port 8000"));

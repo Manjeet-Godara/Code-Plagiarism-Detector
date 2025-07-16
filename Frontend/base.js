@@ -30,8 +30,9 @@ function sendPostreq(){
             "language": document.getElementById("language").value,
         })
     }).then(res=>res.json()).then(res=>{
-        frontUpdate(res)
-        console.log("succesfully submitted and the similarity is",res.similarity,"%")})
+        //frontUpdate(res)
+        //console.log("succesfully submitted and the similarity is",res.similarity,"%")
+        console.log(res.message)})
       .catch(error => console.error("Error:", error));
 }
 

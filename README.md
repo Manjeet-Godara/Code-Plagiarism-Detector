@@ -1,4 +1,4 @@
 # Code-Plagiarism-Detector
 Code Plagiarism Detector is a tool designed to detect similarity between source code files and identify potential cases of code plagiarism. It uses techniques like Levenshtein Distance and Longest Common Subsequence (LCS) based comparison to provide accurate results. 
 
-I am leaving it for 2 days at a chaotic point, I am currently working on the professors loggin page where the error I am facing is that I can't render a HTML file for a fetch request i should return some data or what i can do is, i can just pass a success message and then render the next page on the server side or i can pass all the values as a json object adn then connect the prof_base.js to another html page and use it there to show all the data.
+I have almost made all the pages the next atsk is to make a url and pass to the professor, so that he can send that to the students.

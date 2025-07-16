@@ -2,7 +2,10 @@ const path = require('path');
 const express=require('express');
 const cors=require('cors');
 const app=express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://127.0.0.1:5500',  
+  credentials: true
+}));
 
 const User=require('./Models/User.js');
 const Professor=require('./Models/professor.js');
@@ -138,47 +141,73 @@ app.get('/compare/:id1/:id2', async (req, res) => {
 
 // Code for professor registration
 
-const { setToken, verifyToken } = require('./auth.js');
+// const { setToken, verifyToken } = require('./auth.js');
 
-function authenticateProfessor(req, res, next) {
-    const id=req.cookies?.uid 
-    if (!id) {
-        return res.redirect('/professor/login');
-    }
-    const user = verifyToken(id);
-    if (!user) {
-        return res.redirect('/professor/login');
-    }
-    next();
-}
-app.use('/professor', authenticateProfessor);
+// function authenticateProfessor(req, res, next) {
+//     if (req.path === '/login' && req.method === 'POST') {
+//         return next();
+//     } 
+//     const id=req.cookies?.uid 
+//     if (!id) {
+//         return res.redirect('/prof_login.html'); 
+//     }
+//     const user = verifyToken(id);
+//     if (!user) {
+//         return res.redirect('/prof_login.html');
+//     }
+//     next();
+// }
+// app.use('/professor', authenticateProfessor);
 
-app.get('/professor', (req, res) => {
-    const id = req.cookies?.uid;
-    const prof= verifyToken(id);
-    res.status(200).render("professor", {
-        name: prof.name,
-        email: prof.email,
-        password: prof.password
-    });});
+// app.get('/professor', (req, res) => {
+   
+//     const id = req.cookies?.uid;
+//     const prof= verifyToken(id); 
+//     res.redirect('/prof_dashboard.html')});
 
-app.post('/professor/login', (req, res) => {
+
+app.post('/professor/login', async (req, res) => {
     console.log("Received request to create professor");          //don't render a page here, just set the cookie and return a response and then use that data in the frontend
-    const {name,email, password} = req.body;                      // or just send a success message and redirect to a new page and do whatever you want in the frontend
+    const {name,email, password} = req.body;    
+    console.log(name,email,password)                  // or just send a success message and redirect to a new page and do whatever you want in the frontend
+    const a=await Professor.findOne({email});
+    //console.log(a.name)
+    if (a){
+        if (password==a.password){
+            res.status(200).json(a)
+        console.log("User already exists");
+        }
+        else{
+            res.status(401).json({message:"wrong password"});
+            console.log("wrong password")
+        }
+    }
+    else{
     Professor.create({name, email, password})
     .then(professor => {
         res.cookie('uid', setToken(professor), { httpOnly: true });
-        res.status(200).render("professor", {
-            name: professor.name,
-            email: professor.email,
-            password: professor.password
-        });
+        res.status(200).json({professor});
     })
     .catch(error => {
         console.error("Error creating professor:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).json({message:"Internal Server Error"});
     }
-    );
+    );}
      }); 
+
+//to get spaces created 
+app.get("/professor/spaces/:profId", async (req, res) => {
+    try {
+        const professor = await Professor.findById(req.params.profId).populate("spaces_created");
+        if (!professor) {
+            return res.status(404).json({ message: "Professor not found" });
+        }
+        res.json(professor.spaces_created);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 
 app.listen(8000, () =>console.log("Server is running on port 8000"));

@@ -16,29 +16,47 @@ app.use(express.json());
 const LDF = require('./LdF.js');
 app.use(express.static(path.join(__dirname, '../Frontend')));
 
+//to redirect to frontend student page
+app.get("/student_signIn/:spaceId", async (req, res) => {
+    const spaceId = req.params.spaceId;
+    // Render the EJS form and pass spaceId to it
+    res.render("student_input", { spaceId });
+});
+
 //post request to save code
 
-app.post('/', async (req, res) => {
+app.post('/submit-code', async (req, res) => {
     try {
-        const { code, roll, language } = req.body; 
-        //console.log(code, roll, language);
-        if (!code || !roll || !language) {
+        const { code, roll, language, space_id } = req.body;
+        if (!code || !roll || !language || !space_id) {
             return res.status(400).json({ error: 'All fields are required' });
         }
-        const a= await User.create({
-            user: roll,
-            code: code,
-            language: language})
-        
-        console.log('Code saved successfully:');
+        // Create new user (without space_id)
+        const user = await User.create({ user: roll, code, language });
 
-        const User_same_language = await User.find({ language: language });
+        // Get all users in this space and filter by language
+        const space = await Space.findById(space_id).populate('studentIds');
+        const User_same_space_language = (space.studentIds || []).filter(u => u.language === language);
+
+        if (User_same_space_language.length <= 1) {
+            await Space.findByIdAndUpdate(space_id, {
+                $push: { studentIds: user._id },
+                $inc: { numerOfStudents: 1 }
+            });
+            return res.render("student_result_page", {
+                similarity: "N/A",
+                similarity_with: "Nothing to compare with"
+            });
+        }
+
         let max_similarity = {
             similarity: 0,
             similarity_with: "none"
         };
-        let flagged=false
-        for (const element of User_same_language) {
+        let flagged = false;
+        let code2 = "";
+        let roll2 = "";
+        for (const element of User_same_space_language) {
             if (element.user !== roll) {
                 const similarity = LDF(code, element.code);
                 if (max_similarity === null || similarity > max_similarity.similarity) {
@@ -46,62 +64,65 @@ app.post('/', async (req, res) => {
                         similarity: similarity,
                         similarity_with: element.user
                     };
+                    code2 = element.code;
+                    roll2 = element.user;
                     if (similarity >= 80) {
-                        flagged=true;
+                        flagged = true;
                         break;
                     }
                 }
             }
         }
-        
-        await User.findByIdAndUpdate(a._id, {
+
+        await User.findByIdAndUpdate(user._id, {
             similarity: max_similarity.similarity,
             similarity_with: max_similarity.similarity_with,
             flagged: flagged
-});
-        console.log(max_similarity.similarity," with",max_similarity.similarity_with )
-        if(max_similarity.similarity<80){ 
-                
-                return res.status(200).json({
-                    message: 'Code is not plagiarized',
-                    similarity:max_similarity.similarity ,
-                    similarity_with: max_similarity.similarity_with
-                });
-            }
-        else{
-            return res.status(200).json({
-                message:"Code is plagiarized",
-                similarity:max_similarity.similarity ,
-                similarity_with: max_similarity.similarity_with 
-            })
+        });
 
-        }
+        await Space.findByIdAndUpdate(space_id, {
+            $push: { studentIds: user._id },
+            $inc: { numerOfStudents: 1 }
+        });
 
+        res.render("student_result_page", {
+            similarity: max_similarity.similarity,
+            similarity_with: max_similarity.similarity_with
+        });
     } catch (error) {
         console.error('Error saving code:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: "Internal server error" });
+    }})
+
+// GET request for viewing users in a space (for the View Space button)
+app.get('/space/:spaceId/view', async (req, res) => {
+    try {
+        const spaceId = req.params.spaceId;
+        // Find the space and populate the studentIds array with user documents
+        const space = await Space.findById(spaceId).populate('studentIds');
+        if (!space) {
+            return res.status(404).send("Space not found");
+        }
+        const users = space.studentIds || [];
+        // For each user, find the user they are similar with and attach their _id
+        users.forEach(user => {
+            const compareUser = users.find(u => u.user === user.similarity_with);
+            user.similarity_with_id = compareUser ? compareUser._id : '';
+        });
+        // Separate flagged and non-flagged users
+        const flagged = users.filter(u => u.flagged);
+        const nonFlagged = users.filter(u => !u.flagged);
+        res.render('prof_user_list', { flagged, nonFlagged });
+    } catch (err) {
+        console.error("Error fetching users for this space:", err);
+        res.status(500).send("Error fetching users for this space");
     }
-});
+}); 
+
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve("./"));
 
-//get request to see the flagged users
-
-// app.get('/admin', async (req, res) => {
-//     try {
-//         const users = await User.find({ flagged: true });
-//         if (users.length === 0) {
-//             return res.status(200).json({ message: 'No flagged users' });
-//         }
-//         res.status(200).render("admin",{
-//             users:users
-//         });
-//     } catch (error) {
-//         console.error('Error fetching flagged users:', error);
-//         res.status(500).json({ error: 'Internal server error' });
-//     }
-// });
 
 // get request to compare two codes side by side
 app.get('/compare/:id1/:id2', async (req, res) => {
@@ -112,58 +133,22 @@ app.get('/compare/:id1/:id2', async (req, res) => {
         if (!user1 || !user2) {
             return res.status(404).json({ error: 'User not found' });
         }
-        else{
-            res.status(200).render("compare", {
-                code1: user1.code,
-                code2: user2.code,
-                similarity: user1.similarity,
-        })}}catch (error) {res.status(500).json({ error: 'Internal server error' });}})
+        // Calculate similarity if needed
+        const similarity = LDF(user1.code, user2.code);
+        res.status(200).render("compare", {
+            roll1: user1.user,
+            code1: user1.code,
+            roll2: user2.user,
+            code2: user2.code,
+            similarity: similarity
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
-// app.get('/compare', async (req, res) => {
-//     try {
-//         const { roll1, roll2 } = req.query;
-//         const user1 = await User.findOne({ user: roll1 });
-//         const user2 = await User.findOne({ user: roll2 });
-//         if (!user1 || !user2) {
-//             return res.status(404).json({ error: 'User not found' });
-//         }
-//         res.status(200).render("compare", {
-//             code1: user1.code,
-//             code2: user2.code,
-//             roll1:user1.user,
-//             roll2:user2.user,
-//             similarity: user1.similarity,
-//         });
-//     } catch (error) {
-//         res.status(500).json({ error: 'Internal server error' });
-//     }
-// });
 
 // Code for professor registration
-
-// const { setToken, verifyToken } = require('./auth.js');
-
-// function authenticateProfessor(req, res, next) {
-//     if (req.path === '/login' && req.method === 'POST') {
-//         return next();
-//     } 
-//     const id=req.cookies?.uid 
-//     if (!id) {
-//         return res.redirect('/prof_login.html'); 
-//     }
-//     const user = verifyToken(id);
-//     if (!user) {
-//         return res.redirect('/prof_login.html');
-//     }
-//     next();
-// }
-// app.use('/professor', authenticateProfessor);
-
-// app.get('/professor', (req, res) => {
-   
-//     const id = req.cookies?.uid;
-//     const prof= verifyToken(id); 
-//     res.redirect('/prof_dashboard.html')});
 
 
 app.post('/professor/login', async (req, res) => {
@@ -185,7 +170,7 @@ app.post('/professor/login', async (req, res) => {
     else{
     Professor.create({name, email, password})
     .then(professor => {
-        res.cookie('uid', setToken(professor), { httpOnly: true });
+       
         res.status(200).json({professor});
     })
     .catch(error => {
@@ -209,5 +194,45 @@ app.get("/professor/spaces/:profId", async (req, res) => {
     }
 });
 
+//to get the professor dashboard
+app.get('/professor/dashboard/:profId', async (req, res) => {
+    try {
+        const professor = await Professor.findById(req.params.profId).populate("spaces_created");
+        if (!professor) {
+            return res.status(404).send("Professor not found");
+        }
+        res.render("prof_dashboard", { professor, spaces: professor.spaces_created });
+    } catch (err) {
+        res.status(500).send("Server error");
+    }
+});
+
+// Correct GET route for rendering the create_space page
+app.get('/professor/:profId/create_space', async (req, res) => {
+    const profId = req.params.profId;
+    res.render("create_space", { profId });
+});
+
+// Handle space creation POST request
+app.post('/professor/:profId/create_space', async (req, res) => {
+    try {
+        const { name, description, date } = req.body; // include date from form
+        const profId = req.params.profId;
+        const space = await Space.create({
+            name,
+            description,
+            profId,
+            numerOfStudents: 0,
+            date
+        });
+        // Add space to professor's spaces_created array
+        await Professor.findByIdAndUpdate(profId, { $push: { spaces_created: space._id } });
+        res.redirect(`/professor/dashboard/${profId}`);
+    } catch (err) {
+        res.status(500).send("Error creating space");
+    }
+});
+
+// 
 
 app.listen(8000, () =>console.log("Server is running on port 8000"));

@@ -1,20 +1,22 @@
+<!-- filepath: c:\Users\Manjeet\OneDrive\Desktop\Code-Plagiarism-Detector\Frontend\base.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="/base.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Code Plagiarism Detector</title>
 </head>
 <body>
     <div id="header">
         <h1>Welcome to Code Plagiarism Detector</h1>
     </div>
     <div id="input">
-        <form id="codeForm">
-            <textarea id="codeInput" placeholder="Enter your code" rows="10" cols="50"></textarea>
-            <textarea id="Roll" placeholder="Enter your roll number" rows="1" cols="50"></textarea>
-            <select id="language">
+        <form id="codeForm" method="POST" action="/submit-code">
+            <input type="hidden" name="space_id" value="<%= spaceId %>">
+            <textarea id="codeInput" name="code" placeholder="Enter your code" rows="10" cols="50"></textarea>
+            <textarea id="Roll" name="roll" placeholder="Enter your roll number" rows="1" cols="50"></textarea>
+            <select id="language" name="language">
                 <option value="" disabled selected>Select language</option>
                 <option value="python">Python</option>
                 <option value="java">Java</option>
@@ -28,8 +30,9 @@
                 <option value="swift">Swift</option>
             </select>
             <br>
-            <button id="submit">Submit the code</button>    
+            <button id="submit" type="submit">Submit the code</button>    
         </form>
     </div>
-<script src="base.js"></script></body>
+    <script src="student_input.js"></script>
+</body>
 </html>

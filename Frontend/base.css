@@ -51,16 +51,7 @@
     width: 100%;
 }
 
-#adminButton {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 1.2em;
-    background-color: #4CAF50; /* Green */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
+
 #compare-container {
     display: flex;
     justify-content: center;

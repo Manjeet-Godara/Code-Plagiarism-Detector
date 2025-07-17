@@ -5,6 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compare Codes</title>
+    <style>
+        #compare-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        .code-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 45%;
+        }
+        .big-textarea {
+            width: 100%;
+            height: 300px;
+            resize: none;
+            font-family: monospace;
+            font-size: 1em;
+        }
+        #similarity-result {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .roll-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="header">
@@ -12,11 +41,11 @@
     </div>
     <div id="compare-container">
         <div class="code-block">
-            <h2>Code 1 (Roll No: <%= roll1 %>)</h2>
+            <div class="roll-label">Roll No: <%= roll1 %></div>
             <textarea readonly class="big-textarea"><%= code1 %></textarea>
         </div>
         <div class="code-block">
-            <h2>Code 2 (Roll No: <%= roll2 %>)</h2>
+            <div class="roll-label">Roll No: <%= roll2 %></div>
             <textarea readonly class="big-textarea"><%= code2 %></textarea>
         </div>
     </div>

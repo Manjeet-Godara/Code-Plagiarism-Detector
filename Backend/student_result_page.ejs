@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="/base.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
@@ -12,13 +12,13 @@
         </div>
         <div id="Similarity">
             <p id="1">Similarity:</p>
-            <p id="similarity"></p>
+            <p id="similarity"><%= typeof similarity !== 'undefined' ? similarity : '' %></p>
         </div>
         <div id="similarity_with_roll">
             <p id="2">Similarity is with Roll Number</p>
-            <p id="roll_number"></p>
+            <p id="roll_number"><%= typeof similarity_with !== 'undefined' ? similarity_with : '' %></p>
+        </div>
     </div>
-    </div>
-    <script src="base.js"></script>
+    <script src="/base.js"></script>
 </body>
 </html>

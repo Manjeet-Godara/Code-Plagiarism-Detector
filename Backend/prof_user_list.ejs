@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users in Space</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 60%;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background: #eee;
+        }
+        h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h2>Flagged Users</h2>
+    <table>
+        <tr>
+            <th>Roll No.</th>
+            <th>Similarity With (Roll no.)</th>
+            <th>How Much Similarity (%)</th>
+            <th>Compare</th>
+        </tr>
+        <% flagged.forEach(function(user) { %>
+            <tr>
+                <td><%= user.user %></td>
+                <td><%= user.similarity_with %></td>
+                <td><%= user.similarity %></td>
+                <td>
+                    <% if (user.similarity_with_id) { %>
+                        <form action="/compare/<%= user._id %>/<%= user.similarity_with_id %>" method="get" style="margin:0;">
+                            <button type="submit">Compare</button>
+                        </form>
+                    <% } else { %>
+                        <span style="color:gray;">N/A</span>
+                    <% } %>
+                </td>
+            </tr>
+        <% }); %>
+    </table>
+
+    <h2>Non-Flagged Users</h2>
+    <table>
+        <tr>
+            <th>Roll No.</th>
+            <th>Similarity With (Roll no.)</th>
+            <th>How Much Similarity (%)</th>
+            <th>Compare</th>
+        </tr>
+        <% nonFlagged.forEach(function(user) { %>
+            <tr>
+                <td><%= user.user %></td>
+                <td><%= user.similarity_with %></td>
+                <td><%= user.similarity %></td>
+                <td>
+                    <% if (user.similarity_with_id) { %>
+                        <form action="/compare/<%= user._id %>/<%= user.similarity_with_id %>" method="get" style="margin:0;">
+                            <button type="submit">Compare</button>
+                        </form>
+                    <% } else { %>
+                        <span style="color:gray;">N/A</span>
+                    <% } %>
+                </td>
+            </tr>
+        <% }); %>
+    </table>
+</body>
+</html>

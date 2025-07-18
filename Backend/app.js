@@ -6,7 +6,7 @@ app.use(cors({
   origin: 'http://127.0.0.1:5500',  
   credentials: true
 }));
-
+//console.log("ENV PORT:", process.env.PORT);
 const User=require('./Models/User.js');
 const Professor=require('./Models/professor.js');
 const Space=require('./Models/Space.js');
@@ -234,5 +234,5 @@ app.post('/professor/:profId/create_space', async (req, res) => {
 });
 
 // 
-
-app.listen(8000, () =>console.log("Server is running on port 8000"));
+const PORT= process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
